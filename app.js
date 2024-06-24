@@ -19,11 +19,52 @@ app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
-    res.render('index');
+    res.render('index', { title: 'Chess Game' });
 });
 
 io.on('connection', (socket) => {
-    console.log(socket);
+    // socket.on('Sending new message', () => {
+    //     io.emit("Received - Sending new message");
+    // })
+
+    if (!players.white) {
+        players.white = socket.id;
+        socket.emit('playerRole', 'W');
+    }
+    else if (!players.black) {
+        players.black('playerRole', 'B');
+    }
+    else {
+        socket.emit('spectator');
+    }
+
+    socket.on('disconnect', () => {
+        if (socket.id === players.white || socket.id === players.black) {
+            players = {};
+        }
+    })
+
+    socket.on('move', (move) => {
+        try {
+            if (chess.turn() === 'w' && socket.id !== players.white) return;
+            if (chess.turn() === 'b' && socket.id !== players.black) return;
+
+            const result = chess.move(move);
+            if (result) {
+                currentPlayer = chess.turn();
+                io.emit('move', move);
+                io.emit('boardState', chess.fen());
+            }
+            else {
+                console.log('Invalid move: ', move);
+                socket.emit('invalidMove', move);
+            }
+        }
+        catch (error) {
+            console.log('Invalid move: ', move);
+            socket.emit('invalidMove', move);
+        }
+    })
 })
 
 server.listen(3000);
