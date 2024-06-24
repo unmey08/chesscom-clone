@@ -13,7 +13,7 @@ const io = socket(server);
 const chess = new Chess();
 
 let players = {};
-let curentPlayer = "W";
+let curentPlayer = "w";
 
 app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
@@ -23,16 +23,13 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    // socket.on('Sending new message', () => {
-    //     io.emit("Received - Sending new message");
-    // })
-
     if (!players.white) {
         players.white = socket.id;
         socket.emit('playerRole', 'W');
     }
     else if (!players.black) {
-        players.black('playerRole', 'B');
+        players.black = socket.id;
+        socket.emit('playerRole', 'B');
     }
     else {
         socket.emit('spectator');
@@ -56,12 +53,10 @@ io.on('connection', (socket) => {
                 io.emit('boardState', chess.fen());
             }
             else {
-                console.log('Invalid move: ', move);
                 socket.emit('invalidMove', move);
             }
         }
         catch (error) {
-            console.log('Invalid move: ', move);
             socket.emit('invalidMove', move);
         }
     })
